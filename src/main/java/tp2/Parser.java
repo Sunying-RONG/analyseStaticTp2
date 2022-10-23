@@ -77,7 +77,7 @@ public class Parser {
     public static List<Edge> edgeList = new ArrayList<Edge>();
     public static List<Node> nodeList = new ArrayList<Node>();
     public static List<MyWeightedEdge> classEdgeList = new ArrayList<MyWeightedEdge>();
-    public static List<Node> classNodeList = new ArrayList<Node>();
+    public static double invocAppNb = 0;
 	
 	public static void main(String[] args) throws IOException {
 
@@ -213,7 +213,7 @@ public class Parser {
         String classNameA = sc.nextLine();  // Read user input
         System.out.println("Enter second class name: ");
         String classNameB = sc.nextLine();
-        if (classNames.contains(classNameA) && classNames.contains(classNameB)) {
+        if (classNames.contains(classNameA) && classNames.contains(classNameB) && !classNameA.equals(classNameB)) {
             ArrayList<Float> callNbs = new ArrayList<>();
             float callNb = 0;
             float callNbTotal = 0;
@@ -228,26 +228,65 @@ public class Parser {
                 callNbTotal += callNbs.get(1);
             }
             System.out.println("Call nb between " + classNameA + " and " + classNameB + " : " + callNb);
-            System.out.println("All call nb : " + callNbTotal);
+            System.out.println("All call nb of App's classes : " + callNbTotal);
             System.out.println("Couplage (A,B) = " + callNb/callNbTotal + " (callNb/callNbTotal)");
         } else {
             System.err.println("Wrong class name !");
         }
         
 //      create graphe de couplage pondere
-//        classNames.forEach(name -> 
-//            classNodeList.add(new Node(name)));
-        
-        Node n1 = new Node("n1");
-        Node n2 = new Node("n2");
-        classNodeList.add(n1);
-        classNodeList.add(n2);
-        MyWeightedEdge we1 = new MyWeightedEdge(n1, n2, 0.05);
-        MyWeightedEdge we2 = new MyWeightedEdge(n2, n1, 0.09);
-        classEdgeList.add(we1);
-        classEdgeList.add(we2);
+        for (File fileEntry : javaFiles) {
+            String content = FileUtils.readFileToString(fileEntry);
+            CompilationUnit parse = parse(content.toCharArray());
+            couplagePondere(parse);
+        }
+ 
         createGraphCouplagePondere();
-	 
+        for (MyWeightedEdge e : classEdgeList) {
+            System.out.println(e.getDepartNode() + " : "+e.getArriveNode() + " : "+e.getWeight());
+        }
+	}
+	
+	public static void couplagePondere(CompilationUnit parse) {
+	    ClassDeclarationVisitor visitor = new ClassDeclarationVisitor();
+        parse.accept(visitor);
+
+        for (TypeDeclaration clas : visitor.getClasses()) {
+            double invocClasTotal = 0;
+            String departNode = clas.getName().toString();
+            MethodDeclarationVisitor visitor1 = new MethodDeclarationVisitor();
+            clas.accept(visitor1);
+                
+            for (MethodDeclaration method : visitor1.getMethods()) {
+                MethodInvocationVisitor visitor2 = new MethodInvocationVisitor();
+                method.accept(visitor2);
+                for (MethodInvocation methodInvocation : visitor2.getMethods()) {
+                    String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
+                    if (classNames.contains(methodInvocReceiver) && !departNode.equals(methodInvocReceiver)) {
+                        invocClasTotal++;
+                        MyWeightedEdge weightEdge = findOrCreateMyWeightedEdge(departNode, methodInvocReceiver);
+                        weightEdge.setInvocNb(weightEdge.getInvocNb()+1);
+                    }
+                }
+            }
+            for (MyWeightedEdge weightEdge : classEdgeList) {
+                if (weightEdge.getDepartNode().equals(departNode)) {
+                    weightEdge.setWeight((weightEdge.getInvocNb()/invocAppNb) * weightEdge.getInvocNb()/invocClasTotal);
+                }
+            }
+        }
+	}
+	
+	public static MyWeightedEdge findOrCreateMyWeightedEdge(String departNode, String arriveNode) {
+	    for (int i=0; i<classEdgeList.size(); i++) {
+	        if (classEdgeList.get(i).getDepartNode().equals(departNode) 
+	            && classEdgeList.get(i).getArriveNode().equals(arriveNode)) {
+	            return classEdgeList.get(i);
+	        }
+	    }
+	    MyWeightedEdge newMyWeightedEdge =  new MyWeightedEdge(departNode, arriveNode);
+	    classEdgeList.add(newMyWeightedEdge);
+	    return newMyWeightedEdge;
 	}
 	
     public static ArrayList<Float> callNbTwoClaz(CompilationUnit parse, String classNameA, String classNameB) {
@@ -266,6 +305,7 @@ public class Parser {
                     method.accept(visitor2);
                     for (MethodInvocation methodInvocation : visitor2.getMethods()) {
                         String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
+                        if (!methodInvocReceiver.equals(classNameA) && classNames.contains(methodInvocReceiver))
                         callNbTotal++;
                         if (clas.getName().toString().equals(classNameA) && methodInvocReceiver.equals(classNameB)) {
                             callNb++;
@@ -279,22 +319,15 @@ public class Parser {
     }
     
     public static void createGraphCouplagePondere() {
-        File imgFile = new File("./graphCouplagePondere.png");
-        try {
-            imgFile.createNewFile();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        DirectedMultigraph<String, MyWeightedEdge> g = 
-                new DirectedMultigraph<String, MyWeightedEdge>(MyWeightedEdge.class);
-        for (Node node : classNodeList) {
-            g.addVertex(node.getNodeName());
+        DirectedWeightedMultigraph<String, MyWeightedEdge> g = 
+                new DirectedWeightedMultigraph<String, MyWeightedEdge>(MyWeightedEdge.class);
+        for (String clas : classNames) {
+            g.addVertex(clas);
         }
         
         for (MyWeightedEdge edge : classEdgeList) {
-            String d = edge.getDepartNode().getNodeName();
-            String a = edge.getArriveNode().getNodeName();
+            String d = edge.getDepartNode();
+            String a = edge.getArriveNode();
             g.addEdge(d, a, edge);
 //            g.setEdgeWeight(edge, edge.getWeight());
         }
@@ -302,13 +335,20 @@ public class Parser {
                 new JGraphXAdapter<String, MyWeightedEdge>(g);
 //              mxIGraphLayout layout = new mxParallelEdgeLayout(graphAdapter, 5);
 //              layout.execute(graphAdapter.getDefaultParent());
-              new mxCircleLayout(graphAdapter).execute(graphAdapter.getDefaultParent());
-              new mxParallelEdgeLayout(graphAdapter, 100).execute(graphAdapter.getDefaultParent());
-              BufferedImage image = 
-                mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
-    //        File imgFile = new File("src/test/resources/graph.png");
-              try {
+          new mxCircleLayout(graphAdapter).execute(graphAdapter.getDefaultParent());
+          new mxParallelEdgeLayout(graphAdapter, 100).execute(graphAdapter.getDefaultParent());
+          BufferedImage image = 
+            mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
+          File imgFile = new File("./graphCouplagePondere.png");
+          try {
+              imgFile.createNewFile();
+          } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+          }
+          try {
               ImageIO.write(image, "PNG", imgFile);
+              System.out.println("Graphe couplage pondere generated.");
           } catch (IOException e) {
               // TODO Auto-generated catch block
               e.printStackTrace();
@@ -534,6 +574,7 @@ public class Parser {
 			String methodReceiver = method.resolveBinding().getDeclaringClass().getQualifiedName();
 //			System.out.println("$$method receiver: "+methodReceiver);
 			for (MethodInvocation methodInvocation : visitor2.getMethods()) {
+			    invocAppNb++;
 			    String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
 				System.out.println("method " + method.getName() 
 				        + " invoc method " + methodInvocation.getName()

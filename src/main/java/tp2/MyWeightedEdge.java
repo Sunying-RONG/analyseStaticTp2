@@ -1,33 +1,44 @@
 package tp2;
 
+import java.text.DecimalFormat;
+
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class MyWeightedEdge extends DefaultEdge {
-    private Node departNode;
-    private Node arriveNode;
-    double weight;
+public class MyWeightedEdge extends DefaultWeightedEdge {
+    private String departNode;
+    private String arriveNode;
+    private double weight;
+    private double invocNb;
+    private static final DecimalFormat df = new DecimalFormat("0.0000");
     
-    public MyWeightedEdge(Node departNode, Node arriveNode, double weight) {
+    public MyWeightedEdge(String departNode, String arriveNode) {
         super();
         this.departNode = departNode;
         this.arriveNode = arriveNode;
-        this.weight = weight;
     }
 
-    public Node getDepartNode() {
+    public double getInvocNb() {
+        return invocNb;
+    }
+
+    public void setInvocNb(double invocNb) {
+        this.invocNb = invocNb;
+    }
+
+    public String getDepartNode() {
         return departNode;
     }
 
-    public void setDepartNode(Node departNode) {
+    public void setDepartNode(String departNode) {
         this.departNode = departNode;
     }
 
-    public Node getArriveNode() {
+    public String getArriveNode() {
         return arriveNode;
     }
 
-    public void setArriveNode(Node arriveNode) {
+    public void setArriveNode(String arriveNode) {
         this.arriveNode = arriveNode;
     }
 
@@ -41,7 +52,7 @@ public class MyWeightedEdge extends DefaultEdge {
 
     @Override
     public String toString() {
-        return "(" + getSource() + " : " + getTarget() + " : " + weight + ")";
+        return "(" + df.format(weight) + ")";
     }
 
 
