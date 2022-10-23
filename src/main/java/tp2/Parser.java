@@ -34,12 +34,20 @@ import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.jgrapht.ListenableGraph;
 import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.graph.DirectedWeightedMultigraph;
+import org.jgrapht.graph.ListenableDirectedWeightedGraph;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.layout.mxIGraphLayout;
+import com.mxgraph.layout.mxParallelEdgeLayout;
+import com.mxgraph.layout.orthogonal.mxOrthogonalLayout;
 import com.mxgraph.util.mxCellRenderer;
 
 import org.eclipse.jdt.core.dom.Statement;
@@ -68,6 +76,8 @@ public class Parser {
 	public static CallGraph callGraph;
     public static List<Edge> edgeList = new ArrayList<Edge>();
     public static List<Node> nodeList = new ArrayList<Node>();
+    public static List<MyWeightedEdge> classEdgeList = new ArrayList<MyWeightedEdge>();
+    public static List<Node> classNodeList = new ArrayList<Node>();
 	
 	public static void main(String[] args) throws IOException {
 
@@ -223,6 +233,20 @@ public class Parser {
         } else {
             System.err.println("Wrong class name !");
         }
+        
+//      create graphe de couplage pondere
+//        classNames.forEach(name -> 
+//            classNodeList.add(new Node(name)));
+        
+        Node n1 = new Node("n1");
+        Node n2 = new Node("n2");
+        classNodeList.add(n1);
+        classNodeList.add(n2);
+        MyWeightedEdge we1 = new MyWeightedEdge(n1, n2, 0.05);
+        MyWeightedEdge we2 = new MyWeightedEdge(n2, n1, 0.09);
+        classEdgeList.add(we1);
+        classEdgeList.add(we2);
+        createGraphCouplagePondere();
 	 
 	}
 	
@@ -253,6 +277,43 @@ public class Parser {
         callNbs.add(callNbTotal);
         return callNbs;
     }
+    
+    public static void createGraphCouplagePondere() {
+        File imgFile = new File("./graphCouplagePondere.png");
+        try {
+            imgFile.createNewFile();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        DirectedMultigraph<String, MyWeightedEdge> g = 
+                new DirectedMultigraph<String, MyWeightedEdge>(MyWeightedEdge.class);
+        for (Node node : classNodeList) {
+            g.addVertex(node.getNodeName());
+        }
+        
+        for (MyWeightedEdge edge : classEdgeList) {
+            String d = edge.getDepartNode().getNodeName();
+            String a = edge.getArriveNode().getNodeName();
+            g.addEdge(d, a, edge);
+//            g.setEdgeWeight(edge, edge.getWeight());
+        }
+        JGraphXAdapter<String, MyWeightedEdge> graphAdapter = 
+                new JGraphXAdapter<String, MyWeightedEdge>(g);
+//              mxIGraphLayout layout = new mxParallelEdgeLayout(graphAdapter, 5);
+//              layout.execute(graphAdapter.getDefaultParent());
+              new mxCircleLayout(graphAdapter).execute(graphAdapter.getDefaultParent());
+              new mxParallelEdgeLayout(graphAdapter, 100).execute(graphAdapter.getDefaultParent());
+              BufferedImage image = 
+                mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
+    //        File imgFile = new File("src/test/resources/graph.png");
+              try {
+              ImageIO.write(image, "PNG", imgFile);
+          } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+          }
+    }
 	
     public static void createCallGraph() {
     
@@ -277,14 +338,14 @@ public class Parser {
           
           JGraphXAdapter<String, DefaultEdge> graphAdapter = 
                 new JGraphXAdapter<String, DefaultEdge>(g);
-              mxIGraphLayout layout = new mxCircleLayout(graphAdapter);
-              layout.execute(graphAdapter.getDefaultParent());
-              
-              BufferedImage image = 
-                mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
-    //        File imgFile = new File("src/test/resources/graph.png");
-              try {
-              ImageIO.write(image, "PNG", imgFile);
+          mxIGraphLayout layout = new mxCircleLayout(graphAdapter);
+          layout.execute(graphAdapter.getDefaultParent());
+          
+          BufferedImage image = 
+            mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
+//        File imgFile = new File("src/test/resources/graph.png");
+          try {
+          ImageIO.write(image, "PNG", imgFile);
           } catch (IOException e) {
               // TODO Auto-generated catch block
               e.printStackTrace();
@@ -352,6 +413,7 @@ public class Parser {
 			System.out.println("Class name: " + clas.getName());
 			if (!classNames.contains(clas.getName().toString())) {
 			    classNames.add(clas.getName().toString());
+			    
 			}
 		}
 		classesNumber = classesNumber + visitor.getClassesNumber();
