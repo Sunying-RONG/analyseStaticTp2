@@ -5,7 +5,7 @@ import java.text.DecimalFormat;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class MyWeightedEdge extends DefaultWeightedEdge {
+public class MyWeightedEdge extends DefaultWeightedEdge implements Comparable<MyWeightedEdge>{
     private String departNode;
     private String arriveNode;
     private double weight;
@@ -53,6 +53,12 @@ public class MyWeightedEdge extends DefaultWeightedEdge {
     @Override
     public String toString() {
         return "(" + df.format(weight) + ")";
+    }
+
+    @Override
+    public int compareTo(MyWeightedEdge o) {
+        // TODO Auto-generated method stub
+        return Double.compare(o.getWeight(), getWeight());
     }
 
 

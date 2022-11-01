@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,6 +79,7 @@ public class Parser {
     public static List<Node> nodeList = new ArrayList<Node>();
     public static List<MyWeightedEdge> classEdgeList = new ArrayList<MyWeightedEdge>();
     public static double invocAppNb = 0;
+    public static List<Couplage> clustering = new ArrayList<>();
 	
 	public static void main(String[] args) throws IOException {
 
@@ -245,6 +247,68 @@ public class Parser {
         for (MyWeightedEdge e : classEdgeList) {
             System.out.println(e.getDepartNode() + " : "+e.getArriveNode() + " : "+e.getWeight());
         }
+        
+        System.out.println("------algoCluster------");
+//      algorithme de regroupement (clustering) hiérarchique des classes d’une application
+        algoCluster();
+	}
+	
+	public static void algoCluster() {
+	    for (String s : classNames) {
+	        Couplage c = new Couplage(s);
+	        clustering.add(c);
+	    }
+	    
+	    Collections.sort(classEdgeList);
+	    for (MyWeightedEdge e : classEdgeList) {
+            System.out.println(e.getDepartNode() + " : "+e.getArriveNode() + " : "+e.getWeight());
+        }
+	    System.out.println("------");
+	    for (MyWeightedEdge e : classEdgeList) {
+	        System.out.println("\n---Weighted edge---");
+            System.out.println(e.getDepartNode() + " : "+e.getArriveNode() + " : "+e.getWeight());
+            Couplage couplageA = null;
+            Couplage couplageB = null;
+            for (Couplage c : clustering) {
+                if (c.getCouplesNames().contains(e.getDepartNode())) {
+                    couplageA = c;
+                    System.out.println("---couplageA---");
+                    System.out.println(c.getCouplesNames());
+                }
+                if (c.getCouplesNames().contains(e.getArriveNode())) {
+                    couplageB = c;
+                    System.out.println("---couplageB---");
+                    System.out.println(c.getCouplesNames());
+                }
+            }
+            if (!couplageA.equals(couplageB)) {
+                List<Double> listW = new ArrayList<>();
+                listW.addAll(couplageA.getListWeights());
+                listW.addAll(couplageB.getListWeights());
+                Couplage couplageC = new Couplage(couplageA, couplageB, e.getWeight(), listW);
+                System.out.println("---couplageC---");
+                System.out.println(couplageC.getCouplesNames());
+                System.out.println(couplageC.getWeight());
+                clustering.add(couplageC);
+                clustering.remove(couplageA);
+                clustering.remove(couplageB);
+            } else {
+                for (Couplage c : clustering) {
+                    if (c.equals(couplageA)) {
+                        c.updateListWeights(e.getWeight());
+                        System.out.println("add weight : "+e.getWeight());
+                    }
+                }
+            }
+            System.out.println("===print clustering=====");
+            for (Couplage c : clustering) {
+                System.out.println(c.getCouplesNames());
+                System.out.println("Average couplage: "+c.averageWeight());
+            }
+            
+        }
+	    
+	    clustering.get(0).getCouplesNames().forEach(System.out::println);
 	}
 	
 	public static void couplagePondere(CompilationUnit parse) {
