@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -51,6 +52,9 @@ import com.mxgraph.layout.mxParallelEdgeLayout;
 import com.mxgraph.layout.orthogonal.mxOrthogonalLayout;
 import com.mxgraph.util.mxCellRenderer;
 
+import spoon.Launcher;
+import spoon.reflect.declaration.CtClass;
+
 import org.eclipse.jdt.core.dom.Statement;
 
 public class Parser {
@@ -80,9 +84,14 @@ public class Parser {
     public static List<MyWeightedEdge> classEdgeList = new ArrayList<MyWeightedEdge>();
     public static double invocAppNb = 0;
     public static List<Couplage> clustering = new ArrayList<>();
+    public static List<List<Couplage>> allStepClusterings = new ArrayList<>();
 	
 	public static void main(String[] args) throws IOException {
-
+//	    CtClass l = Launcher.parseClass("class A { void m() { System.out.println(\"yeah\");} }");
+//	    Set methods = l.getAllMethods();
+//          for (Object o : methods.toArray()) {
+//              System.out.println(o.toString());
+//          }
 		// read java files
 		final File folder = new File(projectSourcePath);
 		ArrayList<File> javaFiles = listJavaFilesForFolder(folder);
@@ -251,6 +260,15 @@ public class Parser {
         System.out.println("------algoCluster------");
 //      algorithme de regroupement (clustering) hiérarchique des classes d’une application
         algoCluster();
+        
+        System.out.println("------identifier module------");
+        List<Couplage> modules = identifierModule();
+        System.out.println("===print modules=====");
+        for (Couplage c : modules) {
+            System.out.println(c.getCouplesNames());
+            System.out.println("Average couplage: "+c.averageWeight());
+        }
+        
 	}
 	
 	public static void algoCluster() {
@@ -300,15 +318,38 @@ public class Parser {
                     }
                 }
             }
-            System.out.println("===print clustering=====");
+            System.out.println("===print clustering===");
+            
             for (Couplage c : clustering) {
                 System.out.println(c.getCouplesNames());
                 System.out.println("Average couplage: "+c.averageWeight());
             }
-            
+            System.out.println("clustering size: "+clustering.size()); 
+            List<Couplage> stepClustering = new ArrayList<>();
+            stepClustering.addAll(clustering);
+            allStepClusterings.add(stepClustering);
         }
-	    
-	    clustering.get(0).getCouplesNames().forEach(System.out::println);
+	}
+	
+	public static List<Couplage> identifierModule() {
+	    List<Couplage> modules = new ArrayList<>();
+	    double cp;
+	    System.out.println("Enter parameter CP : ");  
+	    Scanner input = new Scanner(System.in);  
+        cp = input.nextDouble();  
+	    System.out.println("classesNumber/2: "+classesNumber/2);
+	    for (List<Couplage> clustering : allStepClusterings) {
+	        if (clustering.size() <= classesNumber/2 && clustering.size() > modules.size()) {
+	            for (Couplage couplage : clustering) {
+	                if (couplage.averageWeight() < cp) {
+	                    break;
+	                }
+	            }
+	            
+	            modules = clustering;
+	        }
+	    }
+	    return modules;
 	}
 	
 	public static void couplagePondere(CompilationUnit parse) {
