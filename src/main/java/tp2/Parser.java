@@ -52,9 +52,6 @@ import com.mxgraph.layout.mxParallelEdgeLayout;
 import com.mxgraph.layout.orthogonal.mxOrthogonalLayout;
 import com.mxgraph.util.mxCellRenderer;
 
-import spoon.Launcher;
-import spoon.reflect.declaration.CtClass;
-
 import org.eclipse.jdt.core.dom.Statement;
 
 public class Parser {
@@ -87,11 +84,7 @@ public class Parser {
     public static List<List<Couplage>> allStepClusterings = new ArrayList<>();
 	
 	public static void main(String[] args) throws IOException {
-//	    CtClass l = Launcher.parseClass("class A { void m() { System.out.println(\"yeah\");} }");
-//	    Set methods = l.getAllMethods();
-//          for (Object o : methods.toArray()) {
-//              System.out.println(o.toString());
-//          }
+	   
 		// read java files
 		final File folder = new File(projectSourcePath);
 		ArrayList<File> javaFiles = listJavaFilesForFolder(folder);
