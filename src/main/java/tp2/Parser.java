@@ -79,9 +79,9 @@ public class Parser {
     public static List<Edge> edgeList = new ArrayList<Edge>();
     public static List<Node> nodeList = new ArrayList<Node>();
     public static List<MyWeightedEdge> classEdgeList = new ArrayList<MyWeightedEdge>();
-    public static double invocAppNb = 0;
     public static List<Couplage> clustering = new ArrayList<>();
     public static List<List<Couplage>> allStepClusterings = new ArrayList<>();
+    public static double invocAppNb = 0;
 	
 	public static void main(String[] args) throws IOException {
 	   
@@ -249,6 +249,7 @@ public class Parser {
         for (MyWeightedEdge e : classEdgeList) {
             System.out.println(e.getDepartNode() + " : "+e.getArriveNode() + " : "+e.getWeight());
         }
+        System.out.println("invocAppNb: "+invocAppNb);
         
         System.out.println("------algoCluster------");
 //      algorithme de regroupement (clustering) hiérarchique des classes d’une application
@@ -675,9 +676,10 @@ public class Parser {
 			for (MethodInvocation methodInvocation : visitor2.getMethods()) {
 			    invocAppNb++;
 			    String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
-				System.out.println("method " + method.getName() 
-				        + " invoc method " + methodInvocation.getName()
-				        + " #receiverClass: " + methodInvocReceiver);
+			    String mesg = "method " + method.getName() 
+                + " invoc method " + methodInvocation.getName()
+                + " #receiverClass: " + methodInvocReceiver;
+				System.out.println(mesg);
 
 				Node caller = new Node(methodReceiver + "." + method.getName().toString());
                 Node callee = new Node(methodInvocReceiver + "." + methodInvocation.getName().toString());
