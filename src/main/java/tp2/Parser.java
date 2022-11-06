@@ -396,18 +396,19 @@ public class Parser {
 
         for (TypeDeclaration clas : visitor.getClasses()) {
             
-                MethodDeclarationVisitor visitor1 = new MethodDeclarationVisitor();
-                clas.accept(visitor1);
-                for (MethodDeclaration method : visitor1.getMethods()) {
-                    MethodInvocationVisitor visitor2 = new MethodInvocationVisitor();
-                    method.accept(visitor2);
-                    for (MethodInvocation methodInvocation : visitor2.getMethods()) {
-                        String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
-                        if (!methodInvocReceiver.equals(classNameA) && classNames.contains(methodInvocReceiver))
+            MethodDeclarationVisitor visitor1 = new MethodDeclarationVisitor();
+            clas.accept(visitor1);
+            for (MethodDeclaration method : visitor1.getMethods()) {
+                MethodInvocationVisitor visitor2 = new MethodInvocationVisitor();
+                method.accept(visitor2);
+                for (MethodInvocation methodInvocation : visitor2.getMethods()) {
+                    String methodInvocReceiver = methodInvocation.resolveMethodBinding().getDeclaringClass().getName();
+                    if (!methodInvocReceiver.equals(clas.getName().toString()) && classNames.contains(methodInvocReceiver)) {
                         callNbTotal++;
-                        if (clas.getName().toString().equals(classNameA) && methodInvocReceiver.equals(classNameB)) {
-                            callNb++;
-                        }
+                    }
+                    if (clas.getName().toString().equals(classNameA) && methodInvocReceiver.equals(classNameB)) {
+                        callNb++;
+                    }
                 }
             }
         }
