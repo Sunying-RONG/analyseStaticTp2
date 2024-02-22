@@ -1,4 +1,6 @@
 # analyseStaticTp2
+This project is to generate call graph and weighted coupling graph.
+
 1. Git clone https://github.com/Sunying-RONG/analyseStaticTp2.git  
 Code of TP2 jdt is in /analyseStaticTp2/src/main/java/tp2/Parser.java
 2. In eclipse, import maven project analyseStaticTp2
